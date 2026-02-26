@@ -1,0 +1,36 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release-windows:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.24"
+
+      - name: Install fyne-cross
+        run: go install github.com/fyne-io/fyne-cross@latest
+
+      - name: Build Windows exe
+        run: fyne-cross windows -arch=amd64 -app-id=com.schani.elixir-medics -icon Icon.png
+
+      - name: Prepare release asset
+        run: |
+          cd fyne-cross/dist/windows-amd64
+          mv elixir-medics.exe.zip elixir-medics-windows.zip
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: fyne-cross/dist/windows-amd64/elixir-medics-windows.zip
+          generate_release_notes: true

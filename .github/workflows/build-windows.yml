@@ -18,7 +18,7 @@ jobs:
         run: go install github.com/fyne-io/fyne-cross@latest
 
       - name: Build Windows exe
-        run: fyne-cross windows -arch=amd64 -app-id=com.schani.elixir-medics
+        run: fyne-cross windows -arch=amd64 -app-id=com.schani.elixir-medics -icon Icon.png
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4

@@ -4,6 +4,15 @@
 
 This tool extracts patient information from Cliniko that needs to be sent to the NHS for purposes of invoicing. It outputs CSV files with patient appointment data.
 
+## Download (Windows)
+
+1. Go to the [Releases page](https://github.com/DrThomasCleary/elixir-medics/releases/latest)
+2. Download **elixir-medics-windows.zip**
+3. Extract the zip file
+4. Double-click **elixir-medics.exe** to launch the app
+
+> **First-time setup:** Windows may show a "Windows protected your PC" warning. Click **More info** then **Run anyway**. This only happens once. After the app opens, click **API Key Settings** at the bottom to enter your Cliniko API key.
+
 ## Usage
 
 ### GUI Mode (default)

@@ -2,6 +2,9 @@
 elixir-medics
 *.exe
 
+# Keep app icon
+!Icon.png
+
 # Environment
 .env*
 

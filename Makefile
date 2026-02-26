@@ -12,7 +12,7 @@ run: build
 
 # Build Windows GUI executable using fyne-cross (requires Docker)
 build-windows:
-	fyne-cross windows -arch=amd64 -app-id=com.schani.elixir-medics
+	fyne-cross windows -arch=amd64 -app-id=com.schani.elixir-medics -icon Icon.png
 
 # Clean build artifacts
 clean:
