@@ -14,13 +14,15 @@ const (
 type MedicationStatus string
 
 const (
-	MedStatusYes   MedicationStatus = "Yes"
-	MedStatusOther MedicationStatus = "Other"
-	MedStatusNo    MedicationStatus = "No"
-	MedStatusNA    MedicationStatus = "N/A"
+	MedStatusYes            MedicationStatus = "Yes"
+	MedStatusOther          MedicationStatus = "Other"
+	MedStatus10WeeksWaiting MedicationStatus = "10 Weeks Waiting"
+	MedStatusNo             MedicationStatus = "No"
+	MedStatusNA             MedicationStatus = "N/A"
 )
 
 // HasMedication returns true if the medication status is Yes or Other (both incur the £400 charge).
+// "10 Weeks Waiting" does NOT count as having medication (patient is still waiting).
 func (m MedicationStatus) HasMedication() bool {
 	return m == MedStatusYes || m == MedStatusOther
 }
@@ -109,6 +111,14 @@ type YearlyFollowUpRow struct {
 	DischargeDate   string
 	FollowUpDueDate string // Discharge date + 12 months
 	Medication      MedicationStatus
+	ReferringGP     string
+}
+
+// TenWeeksWaitingRow represents a patient waiting 10 weeks for medication.
+type TenWeeksWaitingRow struct {
+	PatientName     string
+	ReferenceNumber string
+	DateOfReferral  string
 	ReferringGP     string
 }
 

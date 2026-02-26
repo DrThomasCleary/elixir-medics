@@ -261,10 +261,11 @@ func (a *App) runGeneration(ctx context.Context, apiKey string, month, year int)
 func (a *App) showSaveDialog(result *report.Result) {
 	log.Println("[DEBUG] showSaveDialog: entered")
 	files := map[string]string{
-		"invoice.csv":          result.InvoiceCSV,
-		"appointments.csv":     result.AppointmentsCSV,
-		"patients.csv":         result.PatientsCSV,
-		"yearly_follow_up.csv": result.YearlyFollowUpCSV,
+		"invoice.csv":           result.InvoiceCSV,
+		"appointments.csv":      result.AppointmentsCSV,
+		"patients.csv":          result.PatientsCSV,
+		"yearly_follow_up.csv":  result.YearlyFollowUpCSV,
+		"10_weeks_waiting.csv":  result.TenWeeksWaitingCSV,
 	}
 	if result.SubmissionsCSV != nil {
 		files["submissions.csv"] = *result.SubmissionsCSV

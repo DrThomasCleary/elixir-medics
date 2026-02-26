@@ -100,10 +100,11 @@ func runCLI(month, year int, outputDir string) {
 
 	// Write output files
 	files := map[string]string{
-		"invoice.csv":          result.InvoiceCSV,
-		"appointments.csv":     result.AppointmentsCSV,
-		"patients.csv":         result.PatientsCSV,
-		"yearly_follow_up.csv": result.YearlyFollowUpCSV,
+		"invoice.csv":           result.InvoiceCSV,
+		"appointments.csv":      result.AppointmentsCSV,
+		"patients.csv":          result.PatientsCSV,
+		"yearly_follow_up.csv":  result.YearlyFollowUpCSV,
+		"10_weeks_waiting.csv":  result.TenWeeksWaitingCSV,
 	}
 
 	if result.SubmissionsCSV != nil {

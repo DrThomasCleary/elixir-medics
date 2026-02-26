@@ -37,5 +37,6 @@ type Result struct {
 	PatientsCSV             string
 	SubmissionsCSV          *string
 	YearlyFollowUpCSV       string
+	TenWeeksWaitingCSV      string
 	RawPatients             []cliniko.Patient
 }

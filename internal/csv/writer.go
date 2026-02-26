@@ -167,6 +167,34 @@ func (w *CSVWriter) WriteSubmissions(r extract.SubmissionsReport) string {
 	return result
 }
 
+// WriteTenWeeksWaiting generates the 10 weeks waiting list CSV.
+func (w *CSVWriter) WriteTenWeeksWaiting(rows []extract.TenWeeksWaitingRow) string {
+	headers := []string{
+		"Patient Name",
+		"Reference Number",
+		"Date of Referral",
+		"Referring GP",
+	}
+
+	var buf bytes.Buffer
+	buf.WriteString(utf8BOM)
+	writer := csv.NewWriter(&buf)
+
+	_ = writer.Write(headers)
+
+	for _, row := range rows {
+		_ = writer.Write([]string{
+			row.PatientName,
+			row.ReferenceNumber,
+			row.DateOfReferral,
+			row.ReferringGP,
+		})
+	}
+
+	writer.Flush()
+	return buf.String()
+}
+
 // WriteYearlyFollowUp generates the yearly follow-up list CSV.
 func (w *CSVWriter) WriteYearlyFollowUp(rows []extract.YearlyFollowUpRow) string {
 	headers := []string{

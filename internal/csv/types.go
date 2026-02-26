@@ -21,4 +21,7 @@ type Writer interface {
 
 	// WriteYearlyFollowUp generates the yearly follow-up list CSV.
 	WriteYearlyFollowUp(rows []extract.YearlyFollowUpRow) string
+
+	// WriteTenWeeksWaiting generates the 10 weeks waiting list CSV.
+	WriteTenWeeksWaiting(rows []extract.TenWeeksWaitingRow) string
 }

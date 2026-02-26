@@ -195,6 +195,20 @@ func (g *Generator) Generate(ctx context.Context, opts Options) (*Result, error)
 	yearlyFollowUpRows := g.buildYearlyFollowUpRows(patientRows, now)
 	yearlyFollowUpCSV := g.csvWriter.WriteYearlyFollowUp(yearlyFollowUpRows)
 
+	// Generate 10 weeks waiting list: patients with medication status "10 Weeks Waiting"
+	var tenWeeksWaitingRows []extract.TenWeeksWaitingRow
+	for _, pr := range patientRows {
+		if pr.Medication == extract.MedStatus10WeeksWaiting {
+			tenWeeksWaitingRows = append(tenWeeksWaitingRows, extract.TenWeeksWaitingRow{
+				PatientName:     pr.PatientName,
+				ReferenceNumber: pr.ReferenceNumber,
+				DateOfReferral:  pr.DateOfReferral,
+				ReferringGP:     pr.ReferringGP,
+			})
+		}
+	}
+	tenWeeksWaitingCSV := g.csvWriter.WriteTenWeeksWaiting(tenWeeksWaitingRows)
+
 	log.Println("[DEBUG] Generate: all done, returning result")
 
 	return &Result{
@@ -204,6 +218,7 @@ func (g *Generator) Generate(ctx context.Context, opts Options) (*Result, error)
 		PatientsCSV:            patientsCSV,
 		SubmissionsCSV:         submissionsCSV,
 		YearlyFollowUpCSV:      yearlyFollowUpCSV,
+		TenWeeksWaitingCSV:     tenWeeksWaitingCSV,
 		RawPatients:            patients,
 	}, nil
 }

@@ -1,6 +1,10 @@
 package extract
 
-import "github.com/schani/elixir-medics/internal/cliniko"
+import (
+	"strings"
+
+	"github.com/schani/elixir-medics/internal/cliniko"
+)
 
 // Custom field tokens (matched by token, not name, as names can change)
 const (
@@ -56,14 +60,18 @@ func ParseCustomFields(patient cliniko.Patient) ParsedCustomFields {
 			}
 			result.PositiveDiagnosis = &positiveDiagnosis
 		case TokenMedication:
-			// Check medication options: "Prescribed" → Yes, any other selected → Other, none → No
+			// Check medication options:
+			// "Prescribed" → Yes, "10 weeks" in name → 10 Weeks Waiting, any other → Other, none → No
 			prescribed := false
+			tenWeeksWaiting := false
 			otherSelected := false
 			otherBody := ""
 			for _, opt := range field.Options {
 				if opt.Selected {
 					if opt.Token == TokenMedicationPrescribed {
 						prescribed = true
+					} else if strings.Contains(strings.ToLower(opt.Name), "10 week") {
+						tenWeeksWaiting = true
 					} else {
 						otherSelected = true
 						if opt.Body != nil && *opt.Body != "" {
@@ -76,6 +84,8 @@ func ParseCustomFields(patient cliniko.Patient) ParsedCustomFields {
 			}
 			if prescribed {
 				result.Medication = MedStatusYes
+			} else if tenWeeksWaiting {
+				result.Medication = MedStatus10WeeksWaiting
 			} else if otherSelected {
 				result.Medication = MedStatusOther
 				result.MedicationOther = otherBody
