@@ -1,0 +1,23 @@
+# Binaries
+elixir-medics
+*.exe
+
+# Environment
+.env*
+
+# macOS
+.DS_Store
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Claude Code
+.claude/settings.local.json
+
+# Output files
+*.csv
+patients.json
+fyne-cross
