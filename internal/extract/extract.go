@@ -59,22 +59,17 @@ func FormatDateBritish(isoDate string) string {
 	return tLondon.Format("02/01/2006, 15:04")
 }
 
-// CalculateCost calculates the cost of an appointment based on mode and medication.
-// Base cost: face-to-face = 1025, remote = 925
-// Add 400 if medication prescribed
-func CalculateCost(isRemote, hasMedication bool) int {
-	baseCost := 1025
+// CalculateInitialCost returns the cost of an initial assessment.
+// Face-to-face = 1025, remote = 925. Medication is billed separately as a titration row.
+func CalculateInitialCost(isRemote bool) int {
 	if isRemote {
-		baseCost = 925
+		return 925
 	}
-
-	medicationCost := 0
-	if hasMedication {
-		medicationCost = 400
-	}
-
-	return baseCost + medicationCost
+	return 1025
 }
+
+// TitrationCost is the flat cost for a titration appointment.
+const TitrationCost = 400
 
 // BoolToTriState converts a bool pointer to a TriState value.
 func BoolToTriState(b *bool) TriState {
@@ -221,9 +216,8 @@ func ExtractPatientRows(
 		mode = ModeRemote
 	}
 
-	// Calculate cost for initial appointment only
-	// Both "Prescribed" (Yes) and "Other" (prescribed then stopped) incur the £400 medication charge
-	cost := fmt.Sprintf("£%d", CalculateCost(isRemote, medication.HasMedication()))
+	// Initial assessment cost (medication is billed separately as a titration row)
+	cost := fmt.Sprintf("£%d", CalculateInitialCost(isRemote))
 
 	// Initial assessment row
 	rows = append(rows, ExtractedRow{
@@ -243,18 +237,25 @@ func ExtractPatientRows(
 		SharedCare:          sharedCare,
 	})
 
-	// Follow-up row (if exists) - uses same mode as initial, no cost
+	// Second appointment: "Titration" if patient has medication, otherwise "Follow-up"
 	if len(relevantAppointments) > 1 {
+		secondType := TypeFollowUp
+		secondCost := ""
+		if medication.HasMedication() {
+			secondType = TypeTitration
+			secondCost = fmt.Sprintf("£%d", TitrationCost)
+		}
+
 		rows = append(rows, ExtractedRow{
 			ReferenceNumber:     referenceNumber,
 			DateOfReferral:      dateOfReferral,
 			ReferringGP:         referringGP,
 			DateOfAssessment:    FormatDateBritish(relevantAppointments[1].AppointmentStart),
 			DateOfAssessmentRaw: relevantAppointments[1].AppointmentStart,
-			Type:                TypeFollowUp,
+			Type:                secondType,
 			Mode:                mode,
 			Medication:          medication,
-			Cost:                "",
+			Cost:                secondCost,
 			DischargeDate:       dischargeDate,
 			PositiveDiagnosis:   positiveDiagnosis,
 			YearlyFollowUp:      yearlyFollowUp,

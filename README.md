@@ -53,7 +53,7 @@ export CLINIKO_API_KEY=your_api_key
 
 ### invoice.csv
 
-The invoice CSV only includes **initial assessments** (follow-up appointments are excluded). It contains the following columns:
+The invoice CSV includes **initial assessments** and **titration appointments** (plain follow-ups are excluded). A patient with medication prescribed will have two rows: one for the initial assessment and one for titration. It contains the following columns:
 
 | Column | Description |
 |--------|-------------|
@@ -61,10 +61,10 @@ The invoice CSV only includes **initial assessments** (follow-up appointments ar
 | Date of Referral | From `custom_fields` (Referral date), or "N/A" if missing |
 | Referring GP | Extracted from `patient.notes` (see GP Parsing below) |
 | Date of Assessment | British format with London timezone (e.g., "18/10/2025, 13:00") |
-| Type | "Initial" (follow-ups are excluded from invoice) |
+| Type | "Initial" or "Titration" |
 | Mode | "Face-to-face" or "Remote" |
-| Medication | "Yes" or "No" |
-| Cost | In pounds |
+| Medication | "Yes", "No", or "Other" |
+| Cost | In pounds (Initial: £1,025/£925, Titration: £400) |
 
 ### patients.csv
 
@@ -207,13 +207,17 @@ The follow-up appointment's actual type is irrelevant.
 
 Medication status is extracted from the `custom_fields` Medication checkbox field. If "Prescribed" is selected, the value is "Yes". Otherwise "No". If `custom_fields` is null or missing, the value is "N/A".
 
+### Titration
+
+The second arrived appointment is classified as **Titration** (instead of Follow-up) when the patient has medication status "Prescribed" or "Other". Titration appointments appear as separate rows in the invoice at a flat £400 cost.
+
+Follow-up appointments without medication remain classified as "Follow-up" and are excluded from the invoice.
+
 ### Cost
 
-The cost is only charged for the initial appointment, with the following rules:
-
-- if it's face-to-face, it's 1025 pounds
-- if it's online, it's 925 pounds
-- if there is medication, there's an additional 400 pounds
+- **Initial assessment (face-to-face):** £1,025
+- **Initial assessment (remote):** £925
+- **Titration:** £400 (flat, separate row)
 
 ### Date Formatting
 

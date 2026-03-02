@@ -235,6 +235,31 @@ func GenerateSubmissionsReport(
 		newDiagnosisPercentage = float64(newDiagnosisCount) / float64(newPatientsCount) * 100
 	}
 
+	// Count initial assessments by mode and titration appointments in the reporting month
+	var initialF2FCount, initialRemoteCount, titrationCount int
+	for _, row := range rows {
+		if row.DateOfAssessmentRaw == "" {
+			continue
+		}
+		t, err := time.Parse(time.RFC3339, row.DateOfAssessmentRaw)
+		if err != nil {
+			continue
+		}
+		if int(t.Month()) != month || t.Year() != year {
+			continue
+		}
+		switch row.Type {
+		case extract.TypeInitial:
+			if row.Mode == extract.ModeRemote {
+				initialRemoteCount++
+			} else {
+				initialF2FCount++
+			}
+		case extract.TypeTitration:
+			titrationCount++
+		}
+	}
+
 	return extract.SubmissionsReport{
 		DNACount:                          dnaAppointments,
 		DNAPercentage:                     dnaPercentage,
@@ -248,6 +273,9 @@ func GenerateSubmissionsReport(
 		NewDiagnosisCount:                 newDiagnosisCount,
 		NewDiagnosisPercentage:            newDiagnosisPercentage,
 		SharedCareCount:                   sharedCareCount,
+		InitialFaceToFaceCount:            initialF2FCount,
+		InitialRemoteCount:                initialRemoteCount,
+		TitrationCount:                    titrationCount,
 	}
 }
 

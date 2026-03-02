@@ -155,6 +155,9 @@ func (w *CSVWriter) WriteSubmissions(r extract.SubmissionsReport) string {
 		fmt.Sprintf("Referrals with previous diagnosis,%d", r.ReferralsWithPreviousDiagnosis),
 		fmt.Sprintf("Referrals without previous diagnosis,%d", r.ReferralsWithoutPreviousDiagnosis),
 		fmt.Sprintf("Number of patient contacts,%d", r.PatientContactsCount),
+		fmt.Sprintf("New assessments (face-to-face),%d", r.InitialFaceToFaceCount),
+		fmt.Sprintf("New assessments (remote),%d", r.InitialRemoteCount),
+		fmt.Sprintf("Number of titration appointments,%d", r.TitrationCount),
 	}
 
 	result := utf8BOM

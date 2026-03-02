@@ -98,6 +98,9 @@ func ExampleCSVWriter_WriteSubmissions() {
 		ReferralsWithPreviousDiagnosis:    3,
 		ReferralsWithoutPreviousDiagnosis: 12,
 		PatientContactsCount:              20,
+		InitialFaceToFaceCount:            7,
+		InitialRemoteCount:                3,
+		TitrationCount:                    2,
 	}
 
 	result := writer.WriteSubmissions(r)
@@ -115,4 +118,7 @@ func ExampleCSVWriter_WriteSubmissions() {
 	// Referrals with previous diagnosis,3
 	// Referrals without previous diagnosis,12
 	// Number of patient contacts,20
+	// New assessments (face-to-face),7
+	// New assessments (remote),3
+	// Number of titration appointments,2
 }

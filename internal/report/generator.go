@@ -92,10 +92,10 @@ func (g *Generator) Generate(ctx context.Context, opts Options) (*Result, error)
 		return t1.Before(t2)
 	})
 
-	// Filter out follow-up appointments for invoice (only include initial assessments)
+	// Include Initial and Titration rows in the invoice (exclude plain Follow-ups)
 	var invoiceRows []extract.ExtractedRow
 	for _, row := range filteredRows {
-		if row.Type != extract.TypeFollowUp {
+		if row.Type == extract.TypeInitial || row.Type == extract.TypeTitration {
 			invoiceRows = append(invoiceRows, row)
 		}
 	}

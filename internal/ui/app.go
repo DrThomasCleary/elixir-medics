@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 	"strconv"
 	"time"
 
@@ -290,7 +291,7 @@ func (a *App) showSaveDialog(result *report.Result) {
 		basePath := uri.Path()
 		log.Printf("[DEBUG] showSaveDialog: saving to %s", basePath)
 		for name, content := range files {
-			path := basePath + "/" + name
+			path := filepath.Join(basePath, name)
 			if err := os.WriteFile(path, []byte(content), 0644); err != nil {
 				dialog.ShowError(fmt.Errorf("Failed to write %s: %v", name, err), a.mainWindow)
 				return

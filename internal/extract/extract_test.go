@@ -95,47 +95,38 @@ func TestFormatDateBritish(t *testing.T) {
 	}
 }
 
-// TestCalculateCost tests cost calculation logic.
-func TestCalculateCost(t *testing.T) {
+// TestCalculateInitialCost tests initial assessment cost calculation.
+func TestCalculateInitialCost(t *testing.T) {
 	tests := []struct {
-		name          string
-		isRemote      bool
-		hasMedication bool
-		expectedCost  int
+		name         string
+		isRemote     bool
+		expectedCost int
 	}{
 		{
-			name:          "face-to-face without medication",
-			isRemote:      false,
-			hasMedication: false,
-			expectedCost:  1025,
+			name:         "face-to-face",
+			isRemote:     false,
+			expectedCost: 1025,
 		},
 		{
-			name:          "face-to-face with medication",
-			isRemote:      false,
-			hasMedication: true,
-			expectedCost:  1425,
-		},
-		{
-			name:          "remote without medication",
-			isRemote:      true,
-			hasMedication: false,
-			expectedCost:  925,
-		},
-		{
-			name:          "remote with medication",
-			isRemote:      true,
-			hasMedication: true,
-			expectedCost:  1325,
+			name:         "remote",
+			isRemote:     true,
+			expectedCost: 925,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := CalculateCost(tt.isRemote, tt.hasMedication)
+			result := CalculateInitialCost(tt.isRemote)
 			if result != tt.expectedCost {
-				t.Errorf("CalculateCost(%v, %v) = %d, want %d", tt.isRemote, tt.hasMedication, result, tt.expectedCost)
+				t.Errorf("CalculateInitialCost(%v) = %d, want %d", tt.isRemote, result, tt.expectedCost)
 			}
 		})
+	}
+}
+
+func TestTitrationCost(t *testing.T) {
+	if TitrationCost != 400 {
+		t.Errorf("TitrationCost = %d, want 400", TitrationCost)
 	}
 }
 
@@ -632,7 +623,7 @@ func TestExtractPatientRows(t *testing.T) {
 			expectedCost: "£925",
 		},
 		{
-			name: "patient with medication",
+			name: "patient with medication (no titration yet - only initial)",
 			patient: cliniko.Patient{
 				ID:             3,
 				FirstName:      "Alice",
@@ -679,7 +670,7 @@ func TestExtractPatientRows(t *testing.T) {
 			expectedRows: 1,
 			expectedType: TypeInitial,
 			expectedMode: ModeFaceToFace,
-			expectedCost: "£1425", // 1025 + 400
+			expectedCost: "£1025",
 		},
 		{
 			name: "patient with initial and follow-up",
@@ -859,20 +850,161 @@ func TestExtractPatientRows(t *testing.T) {
 				}
 			}
 
-			// Verify follow-up has no cost
+			// Verify second row (follow-up or titration)
 			if tt.expectedRows == 2 {
-				if result.Rows[1].Type != TypeFollowUp {
-					t.Errorf("second row type = %q, want %q", result.Rows[1].Type, TypeFollowUp)
+				secondRow := result.Rows[1]
+				// Without medication: Follow-up with no cost
+				// With medication: Titration with £400 cost
+				if secondRow.Type != TypeFollowUp && secondRow.Type != TypeTitration {
+					t.Errorf("second row type = %q, want Follow-up or Titration", secondRow.Type)
 				}
-				if result.Rows[1].Cost != "" {
-					t.Errorf("follow-up cost = %q, want empty", result.Rows[1].Cost)
+				if secondRow.Type == TypeFollowUp && secondRow.Cost != "" {
+					t.Errorf("follow-up cost = %q, want empty", secondRow.Cost)
 				}
-				// Follow-up should have same mode as initial
-				if result.Rows[1].Mode != result.Rows[0].Mode {
-					t.Errorf("follow-up mode %q != initial mode %q", result.Rows[1].Mode, result.Rows[0].Mode)
+				if secondRow.Type == TypeTitration && secondRow.Cost != "£400" {
+					t.Errorf("titration cost = %q, want £400", secondRow.Cost)
+				}
+				// Should have same mode as initial
+				if secondRow.Mode != result.Rows[0].Mode {
+					t.Errorf("second row mode %q != initial mode %q", secondRow.Mode, result.Rows[0].Mode)
 				}
 			}
 		})
+	}
+}
+
+// TestExtractPatientRows_Titration tests that a follow-up with medication is classified as Titration.
+func TestExtractPatientRows_Titration(t *testing.T) {
+	ctx := context.Background()
+
+	patient := cliniko.Patient{
+		ID:             10,
+		FirstName:      "Test",
+		LastName:       "Patient",
+		OldReferenceID: strPtr("EML126"),
+		CustomFields: &cliniko.CustomFields{
+			Sections: []cliniko.CustomFieldSection{
+				{
+					Fields: []cliniko.CustomField{
+						{
+							Token: TokenMedication,
+							Options: []cliniko.CustomFieldOption{
+								{Token: TokenMedicationPrescribed, Selected: true},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	client := &mockClient{
+		appointments: []cliniko.Appointment{
+			{
+				ID:               "apt1",
+				AppointmentStart: "2025-10-15T10:00:00Z",
+				DidNotArrive:     false,
+				AppointmentType: cliniko.AppointmentTypeLink{
+					Links: struct {
+						Self string `json:"self"`
+					}{Self: "https://api.cliniko.com/v1/appointment_types/1"},
+				},
+			},
+			{
+				ID:               "apt2",
+				AppointmentStart: "2026-02-25T10:00:00Z",
+				DidNotArrive:     false,
+				AppointmentType: cliniko.AppointmentTypeLink{
+					Links: struct {
+						Self string `json:"self"`
+					}{Self: "https://api.cliniko.com/v1/appointment_types/1"},
+				},
+			},
+		},
+		appointmentTypes: map[string]*cliniko.AppointmentType{
+			"https://api.cliniko.com/v1/appointment_types/1": {ID: 1, Name: "Face-to-face Consultation"},
+		},
+	}
+
+	result, err := ExtractPatientRows(ctx, client, patient)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if len(result.Rows) != 2 {
+		t.Fatalf("got %d rows, want 2", len(result.Rows))
+	}
+
+	initial := result.Rows[0]
+	if initial.Type != TypeInitial {
+		t.Errorf("first row type = %q, want Initial", initial.Type)
+	}
+	if initial.Cost != "£1025" {
+		t.Errorf("initial cost = %q, want £1025 (no medication surcharge)", initial.Cost)
+	}
+
+	titration := result.Rows[1]
+	if titration.Type != TypeTitration {
+		t.Errorf("second row type = %q, want Titration", titration.Type)
+	}
+	if titration.Cost != "£400" {
+		t.Errorf("titration cost = %q, want £400", titration.Cost)
+	}
+}
+
+// TestExtractPatientRows_FollowUpWithoutMedication tests that a follow-up without medication stays Follow-up.
+func TestExtractPatientRows_FollowUpWithoutMedication(t *testing.T) {
+	ctx := context.Background()
+
+	patient := cliniko.Patient{
+		ID:             11,
+		FirstName:      "Test",
+		LastName:       "NoMed",
+		OldReferenceID: strPtr("EML200"),
+	}
+
+	client := &mockClient{
+		appointments: []cliniko.Appointment{
+			{
+				ID:               "apt1",
+				AppointmentStart: "2025-10-15T10:00:00Z",
+				DidNotArrive:     false,
+				AppointmentType: cliniko.AppointmentTypeLink{
+					Links: struct {
+						Self string `json:"self"`
+					}{Self: "https://api.cliniko.com/v1/appointment_types/1"},
+				},
+			},
+			{
+				ID:               "apt2",
+				AppointmentStart: "2026-02-25T10:00:00Z",
+				DidNotArrive:     false,
+				AppointmentType: cliniko.AppointmentTypeLink{
+					Links: struct {
+						Self string `json:"self"`
+					}{Self: "https://api.cliniko.com/v1/appointment_types/1"},
+				},
+			},
+		},
+		appointmentTypes: map[string]*cliniko.AppointmentType{
+			"https://api.cliniko.com/v1/appointment_types/1": {ID: 1, Name: "Face-to-face Consultation"},
+		},
+	}
+
+	result, err := ExtractPatientRows(ctx, client, patient)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if len(result.Rows) != 2 {
+		t.Fatalf("got %d rows, want 2", len(result.Rows))
+	}
+
+	if result.Rows[1].Type != TypeFollowUp {
+		t.Errorf("second row type = %q, want Follow-up (no medication)", result.Rows[1].Type)
+	}
+	if result.Rows[1].Cost != "" {
+		t.Errorf("follow-up cost = %q, want empty", result.Rows[1].Cost)
 	}
 }
 

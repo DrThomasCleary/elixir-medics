@@ -1,6 +1,8 @@
 // Package extract provides data extraction logic for patient records.
 package extract
 
+import "strings"
+
 // TriState represents a Yes/No/N/A value.
 type TriState string
 
@@ -23,8 +25,9 @@ const (
 
 // HasMedication returns true if the medication status is Yes or Other (both incur the £400 charge).
 // "10 Weeks Waiting" does NOT count as having medication (patient is still waiting).
+// Handles the display form "Other - <text>" as well as the base "Other" value.
 func (m MedicationStatus) HasMedication() bool {
-	return m == MedStatusYes || m == MedStatusOther
+	return m == MedStatusYes || m == MedStatusOther || strings.HasPrefix(string(m), "Other")
 }
 
 // AppointmentMode represents the mode of an appointment.
@@ -40,9 +43,10 @@ const (
 type AppointmentType string
 
 const (
-	TypeInitial  AppointmentType = "Initial"
-	TypeFollowUp AppointmentType = "Follow-up"
-	TypeNA       AppointmentType = "N/A"
+	TypeInitial   AppointmentType = "Initial"
+	TypeTitration AppointmentType = "Titration"
+	TypeFollowUp  AppointmentType = "Follow-up"
+	TypeNA        AppointmentType = "N/A"
 )
 
 // ParsedCustomFields contains parsed custom field values from a patient.
@@ -148,4 +152,7 @@ type SubmissionsReport struct {
 	NewDiagnosisCount           int     // Patients with positive diagnosis and no previous diagnosis (of those with initial assessment in month)
 	NewDiagnosisPercentage      float64 // Percentage of new diagnosis patients (of those with initial assessment and no previous diagnosis)
 	SharedCareCount             int     // Patients on caseload with medication and shared care
+	InitialFaceToFaceCount      int     // Initial assessments in month that are face-to-face
+	InitialRemoteCount          int     // Initial assessments in month that are remote
+	TitrationCount              int     // Titration appointments in month
 }
