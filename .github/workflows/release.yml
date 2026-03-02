@@ -26,8 +26,8 @@ jobs:
 
       - name: Prepare release asset
         run: |
-          cd fyne-cross/dist/windows-amd64
-          mv elixir-medics.exe.zip elixir-medics-windows.zip
+          cd "fyne-cross/dist/windows-amd64"
+          mv "Elixir Medics.exe.zip" elixir-medics-windows.zip
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
