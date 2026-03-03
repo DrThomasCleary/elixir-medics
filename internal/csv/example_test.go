@@ -30,7 +30,7 @@ func ExampleCSVWriter_WriteInvoice() {
 	fmt.Print(strings.TrimPrefix(result, utf8BOM))
 	// Output:
 	// Reference Number,Date of Referral,Referring GP,Date of Assessment,Type,Mode,Medication,Cost
-	// REF001,2025-01-15,Dr. Smith,2025-01-20,Initial,Face-to-face,Yes,100.00
+	// REF001,15/01/2025,Dr. Smith,2025-01-20,Initial,Face-to-face,Yes,100.00
 }
 
 func ExampleCSVWriter_WriteAppointments() {
@@ -50,7 +50,7 @@ func ExampleCSVWriter_WriteAppointments() {
 	fmt.Print(strings.TrimPrefix(result, utf8BOM))
 	// Output:
 	// Patient Name,Referral ID,Referral Date,Appointment Date/Time,Arrived?
-	// John Doe,REF001,2025-01-15,2025-01-20 10:00,Yes
+	// John Doe,REF001,15/01/2025,2025-01-20 10:00,Yes
 }
 
 func ExampleCSVWriter_WritePatients() {
@@ -79,7 +79,7 @@ func ExampleCSVWriter_WritePatients() {
 	fmt.Print(strings.TrimPrefix(result, utf8BOM))
 	// Output:
 	// Patient Name,Reference Number,Date of Referral,Referring GP,Mode,Medication,Discharge Date,Positive Diagnosis,Yearly Follow Up,Previous Diagnosis,Shared Care,Number of Appointments,Number of Treatment Notes,Number of Communications
-	// John Doe,REF001,2025-01-15,Dr. Smith,Face-to-face,Yes,2025-02-15,Yes,2026-01-15,No,Yes,3,5,2
+	// John Doe,REF001,15/01/2025,Dr. Smith,Face-to-face,Yes,15/02/2025,Yes,2026-01-15,No,Yes,3,5,2
 }
 
 func ExampleCSVWriter_WriteSubmissions() {

@@ -6,11 +6,22 @@ import (
 	"encoding/csv"
 	"fmt"
 	"strconv"
+	"time"
 
 	"github.com/schani/elixir-medics/internal/extract"
 )
 
 const utf8BOM = "\xEF\xBB\xBF"
+
+// formatDateUK converts a YYYY-MM-DD date to DD/MM/YYYY for display.
+// Returns the original string if it can't be parsed (e.g. "N/A").
+func formatDateUK(isoDate string) string {
+	t, err := time.Parse("2006-01-02", isoDate)
+	if err != nil {
+		return isoDate
+	}
+	return t.Format("02/01/2006")
+}
 
 // CSVWriter implements the Writer interface using Go's standard library.
 type CSVWriter struct{}
@@ -42,7 +53,7 @@ func (w *CSVWriter) WriteInvoice(rows []extract.ExtractedRow) string {
 	for _, row := range rows {
 		_ = writer.Write([]string{
 			row.ReferenceNumber,
-			row.DateOfReferral,
+			formatDateUK(row.DateOfReferral),
 			row.ReferringGP,
 			row.DateOfAssessment,
 			string(row.Type),
@@ -81,7 +92,7 @@ func (w *CSVWriter) WriteAppointments(appointments []extract.AppointmentWithPati
 		_ = writer.Write([]string{
 			apt.PatientName,
 			apt.ReferralID,
-			apt.ReferralDate,
+			formatDateUK(apt.ReferralDate),
 			apt.AppointmentDateTime,
 			arrived,
 		})
@@ -120,11 +131,11 @@ func (w *CSVWriter) WritePatients(patients []extract.PatientRow) string {
 		_ = writer.Write([]string{
 			patient.PatientName,
 			patient.ReferenceNumber,
-			patient.DateOfReferral,
+			formatDateUK(patient.DateOfReferral),
 			patient.ReferringGP,
 			string(patient.Mode),
 			string(patient.Medication),
-			patient.DischargeDate,
+			formatDateUK(patient.DischargeDate),
 			string(patient.PositiveDiagnosis),
 			patient.YearlyFollowUp,
 			string(patient.PreviousDiagnosis),
@@ -189,7 +200,7 @@ func (w *CSVWriter) WriteTenWeeksWaiting(rows []extract.TenWeeksWaitingRow) stri
 		_ = writer.Write([]string{
 			row.PatientName,
 			row.ReferenceNumber,
-			row.DateOfReferral,
+			formatDateUK(row.DateOfReferral),
 			row.ReferringGP,
 		})
 	}
@@ -219,7 +230,7 @@ func (w *CSVWriter) WriteYearlyFollowUp(rows []extract.YearlyFollowUpRow) string
 		_ = writer.Write([]string{
 			row.PatientName,
 			row.ReferenceNumber,
-			row.DischargeDate,
+			formatDateUK(row.DischargeDate),
 			row.FollowUpDueDate,
 			string(row.Medication),
 			row.ReferringGP,
