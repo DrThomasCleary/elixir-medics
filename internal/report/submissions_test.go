@@ -25,7 +25,7 @@ func TestGenerateSubmissionsReport_DNACount(t *testing.T) {
 	report := GenerateSubmissionsReport(appointments, nil, rows, nil, 11, 2024)
 
 	assert.Equal(t, 2, report.DNACount, "Should count 2 DNA appointments in November")
-	// Caseload = 3 patients, 2 DNA = 66.7%
+	// DNA=2, initial assessments=1, DNA% = 2/(2+1) = 66.7%
 	assert.InDelta(t, 66.67, report.DNAPercentage, 0.1)
 }
 
@@ -278,7 +278,7 @@ func TestGenerateSubmissionsReport_CompleteScenario(t *testing.T) {
 	report := GenerateSubmissionsReport(appointments, contacts, rows, scenarioPatients, 11, 2024)
 
 	assert.Equal(t, 1, report.DNACount)
-	assert.InDelta(t, 50.0, report.DNAPercentage, 0.1) // 1 DNA out of 2 patients on caseload
+	assert.InDelta(t, 50.0, report.DNAPercentage, 0.1) // 1 DNA / (1 DNA + 1 initial) = 50%
 	assert.Equal(t, 1, report.InitialAssessmentCount)   // EML1's first arrived in Nov
 	assert.Equal(t, 1, report.ReferralsCount)           // Only patient 1 referred in Nov
 	assert.Equal(t, 2, report.PatientContactsCount)

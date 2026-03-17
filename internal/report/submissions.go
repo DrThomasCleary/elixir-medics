@@ -194,8 +194,9 @@ func GenerateSubmissionsReport(
 	}
 
 	var dnaPercentage float64
-	if caseloadCount > 0 {
-		dnaPercentage = float64(dnaAppointments) / float64(caseloadCount) * 100
+	dnaPlusInitial := dnaAppointments + newPatientsCount
+	if dnaPlusInitial > 0 {
+		dnaPercentage = float64(dnaAppointments) / float64(dnaPlusInitial) * 100
 	}
 
 	// Patients with initial assessment in month + positive diagnosis + no previous diagnosis
