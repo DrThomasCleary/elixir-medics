@@ -92,10 +92,21 @@ func (g *Generator) Generate(ctx context.Context, opts Options) (*Result, error)
 		return t1.Before(t2)
 	})
 
-	// Include Initial and Titration rows in the invoice (exclude plain Follow-ups)
+	// Include Initial and Titration rows in the invoice (exclude plain Follow-ups).
+	// A titration row is only included if the patient's initial assessment is also
+	// in this reporting period, to prevent double-billing across months.
+	initialsInPeriod := make(map[string]bool)
+	for _, row := range filteredRows {
+		if row.Type == extract.TypeInitial {
+			initialsInPeriod[row.ReferenceNumber] = true
+		}
+	}
+
 	var invoiceRows []extract.ExtractedRow
 	for _, row := range filteredRows {
-		if row.Type == extract.TypeInitial || row.Type == extract.TypeTitration {
+		if row.Type == extract.TypeInitial {
+			invoiceRows = append(invoiceRows, row)
+		} else if row.Type == extract.TypeTitration && initialsInPeriod[row.ReferenceNumber] {
 			invoiceRows = append(invoiceRows, row)
 		}
 	}
