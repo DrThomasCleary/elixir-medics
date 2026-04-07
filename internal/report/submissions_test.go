@@ -45,9 +45,13 @@ func TestGenerateSubmissionsReport_InitialAssessmentCount(t *testing.T) {
 		{ReferralID: "EML3", AppointmentDateTimeRaw: "2024-12-10T10:00:00Z", Arrived: true},
 	}
 
-	report := GenerateSubmissionsReport(appointments, nil, nil, nil, 11, 2024)
+	rows := []extract.ExtractedRow{
+		{ReferenceNumber: "EML-001", DateOfAssessmentRaw: "2024-11-15T10:00:00Z", Type: extract.TypeInitial, Mode: extract.ModeRemote, DateOfReferral: "2024-10-01"},
+	}
 
-	// Only Patient 1 has their first arrived appointment in November
+	report := GenerateSubmissionsReport(appointments, nil, rows, nil, 11, 2024)
+
+	// Only Patient 1 has their initial assessment in November
 	assert.Equal(t, 1, report.InitialAssessmentCount)
 }
 

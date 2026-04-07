@@ -231,11 +231,6 @@ func GenerateSubmissionsReport(
 		}
 	}
 
-	var newDiagnosisPercentage float64
-	if newPatientsCount > 0 {
-		newDiagnosisPercentage = float64(newDiagnosisCount) / float64(newPatientsCount) * 100
-	}
-
 	// Count initial assessments by mode and titration appointments in the reporting month
 	var initialF2FCount, initialRemoteCount, titrationCount int
 	for _, row := range rows {
@@ -261,10 +256,17 @@ func GenerateSubmissionsReport(
 		}
 	}
 
+	initialAssessmentCount := initialF2FCount + initialRemoteCount
+
+	var newDiagnosisPercentage float64
+	if initialAssessmentCount > 0 {
+		newDiagnosisPercentage = float64(newDiagnosisCount) / float64(initialAssessmentCount) * 100
+	}
+
 	return extract.SubmissionsReport{
 		DNACount:                          dnaAppointments,
 		DNAPercentage:                     dnaPercentage,
-		InitialAssessmentCount:            newPatientsCount,
+		InitialAssessmentCount:            initialAssessmentCount,
 		ReferralsCount:                    referralsCount,
 		ReferralsWithPreviousDiagnosis:    referralsWithPreviousDiagnosis,
 		ReferralsWithoutPreviousDiagnosis: referralsWithoutPreviousDiagnosis,
