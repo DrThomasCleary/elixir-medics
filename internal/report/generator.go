@@ -2,6 +2,7 @@ package report
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"regexp"
 	"sort"
@@ -92,12 +93,31 @@ func (g *Generator) Generate(ctx context.Context, opts Options) (*Result, error)
 		return t1.Before(t2)
 	})
 
-	// Include Initial and Titration rows in the invoice (exclude plain Follow-ups).
-	// Each patient only ever has one Initial and one Titration row (code tracks first 2
-	// appointments only), so each is billed exactly once in the month it occurs.
+	// Build lookup maps for invoice logic
+	initialsInPeriod := make(map[string]bool)
+	titrationsInPeriod := make(map[string]bool)
+	for _, row := range filteredRows {
+		if row.Type == extract.TypeInitial {
+			initialsInPeriod[row.ReferenceNumber] = true
+		} else if row.Type == extract.TypeTitration {
+			titrationsInPeriod[row.ReferenceNumber] = true
+		}
+	}
+
+	// Invoice rules:
+	// - If initial + titration are both in this period: two separate rows
+	// - If initial is in this period but titration is not: the titration was done
+	//   during the initial, so add £400 surcharge to the initial cost
+	// - If only titration is in this period (initial was before): exclude it,
+	//   the £400 was already charged on the initial in a previous month
 	var invoiceRows []extract.ExtractedRow
 	for _, row := range filteredRows {
-		if row.Type == extract.TypeInitial || row.Type == extract.TypeTitration {
+		if row.Type == extract.TypeInitial {
+			if row.Medication.HasMedication() && !titrationsInPeriod[row.ReferenceNumber] {
+				row.Cost = fmt.Sprintf("£%d", extract.CalculateInitialCost(row.Mode == extract.ModeRemote)+extract.TitrationCost)
+			}
+			invoiceRows = append(invoiceRows, row)
+		} else if row.Type == extract.TypeTitration && initialsInPeriod[row.ReferenceNumber] {
 			invoiceRows = append(invoiceRows, row)
 		}
 	}
