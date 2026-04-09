@@ -143,8 +143,22 @@ func ExtractPatientRows(
 
 	// Filter to appointments where patient showed up
 	validAppointments := make([]cliniko.Appointment, 0)
+	var referralCutoff *time.Time
+	if customFields.ReferralDate != nil && *customFields.ReferralDate != "" {
+		if rt, err := time.Parse("2006-01-02", *customFields.ReferralDate); err == nil {
+			referralCutoff = &rt
+		}
+	}
 	for _, apt := range allAppointmentsSorted {
 		if !apt.DidNotArrive {
+			if referralCutoff != nil {
+				aptTime, err := time.Parse(time.RFC3339, apt.AppointmentStart)
+				if err == nil && aptTime.Before(*referralCutoff) {
+					// Ignore arrived appointments before NHS referral date
+					// (typically private-clinic history not billable under EML rules).
+					continue
+				}
+			}
 			validAppointments = append(validAppointments, apt)
 		}
 	}
