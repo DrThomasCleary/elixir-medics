@@ -2,6 +2,7 @@ package extract
 
 import (
 	"context"
+	"crypto/sha1"
 	"fmt"
 	"log"
 	"regexp"
@@ -11,6 +12,7 @@ import (
 	"time"
 
 	"github.com/schani/elixir-medics/internal/cliniko"
+	"github.com/schani/elixir-medics/internal/debuglog"
 )
 
 const (
@@ -143,6 +145,8 @@ func ExtractPatientRows(
 
 	// Filter to appointments where patient showed up
 	validAppointments := make([]cliniko.Appointment, 0)
+	skippedPreReferralCount := 0
+	marchDNACount := 0
 	var referralCutoff *time.Time
 	if customFields.ReferralDate != nil && *customFields.ReferralDate != "" {
 		if rt, err := time.Parse("2006-01-02", *customFields.ReferralDate); err == nil {
@@ -150,17 +154,22 @@ func ExtractPatientRows(
 		}
 	}
 	for _, apt := range allAppointmentsSorted {
-		if !apt.DidNotArrive {
-			if referralCutoff != nil {
-				aptTime, err := time.Parse(time.RFC3339, apt.AppointmentStart)
-				if err == nil && aptTime.Before(*referralCutoff) {
-					// Ignore arrived appointments before NHS referral date
-					// (typically private-clinic history not billable under EML rules).
-					continue
-				}
+		aptTime, err := time.Parse(time.RFC3339, apt.AppointmentStart)
+		if apt.DidNotArrive {
+			if err == nil && aptTime.Year() == 2026 && aptTime.Month() == time.March {
+				marchDNACount++
 			}
-			validAppointments = append(validAppointments, apt)
+			continue
 		}
+		if referralCutoff != nil {
+			if err == nil && aptTime.Before(*referralCutoff) {
+				// Ignore arrived appointments before NHS referral date
+				// (typically private-clinic history not billable under EML rules).
+				skippedPreReferralCount++
+				continue
+			}
+		}
+		validAppointments = append(validAppointments, apt)
 	}
 
 	// Take at most the first two valid appointments
@@ -186,6 +195,7 @@ func ExtractPatientRows(
 	referenceNumber := FormatReferenceNumber(referralID)
 	dateOfReferral := stringOrNA(customFields.ReferralDate)
 	referringGP := ParseGP(patient.Notes)
+	patientKey := fmt.Sprintf("%x", sha1.Sum([]byte(referenceNumber)))[:8]
 
 
 	// If no valid appointments, still produce a row with N/A values
@@ -276,6 +286,46 @@ func ExtractPatientRows(
 			PreviousDiagnosis:   previousDiagnosis,
 			SharedCare:          sharedCare,
 		})
+	}
+
+	shouldLogMarchClassification := marchDNACount > 0
+	for _, apt := range relevantAppointments {
+		t, err := time.Parse(time.RFC3339, apt.AppointmentStart)
+		if err == nil && t.Year() == 2026 && t.Month() == time.March {
+			shouldLogMarchClassification = true
+			break
+		}
+	}
+	if shouldLogMarchClassification {
+		secondType := "none"
+		if len(relevantAppointments) > 1 {
+			if medication.HasMedication() {
+				secondType = string(TypeTitration)
+			} else {
+				secondType = string(TypeFollowUp)
+			}
+		}
+		firstDate := ""
+		secondDate := ""
+		if len(relevantAppointments) > 0 {
+			firstDate = relevantAppointments[0].AppointmentStart
+		}
+		if len(relevantAppointments) > 1 {
+			secondDate = relevantAppointments[1].AppointmentStart
+		}
+		// #region agent log
+		debuglog.Log("2026-03", "H1", "internal/extract/extract.go:286", "march patient appointment classification", map[string]any{
+			"patientKey":              patientKey,
+			"validAppointments":       len(validAppointments),
+			"relevantAppointments":    len(relevantAppointments),
+			"marchDNACount":           marchDNACount,
+			"skippedPreReferralCount": skippedPreReferralCount,
+			"medicationHasCharge":     medication.HasMedication(),
+			"firstAppointment":        firstDate,
+			"secondAppointment":       secondDate,
+			"secondType":              secondType,
+		})
+		// #endregion
 	}
 
 	return &ExtractionResult{

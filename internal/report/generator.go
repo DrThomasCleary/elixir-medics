@@ -12,6 +12,7 @@ import (
 
 	"github.com/schani/elixir-medics/internal/cliniko"
 	"github.com/schani/elixir-medics/internal/csv"
+	"github.com/schani/elixir-medics/internal/debuglog"
 	"github.com/schani/elixir-medics/internal/extract"
 )
 
@@ -34,6 +35,10 @@ func NewGenerator(client cliniko.Client) *Generator {
 // Generate generates all reports.
 func (g *Generator) Generate(ctx context.Context, opts Options) (*Result, error) {
 	log.Println("[DEBUG] Generate: starting")
+	runID := "no-month"
+	if opts.Month != nil && opts.Year != nil {
+		runID = fmt.Sprintf("%04d-%02d", *opts.Year, *opts.Month)
+	}
 	now := time.Now()
 	if opts.Now != nil {
 		now = *opts.Now
@@ -71,6 +76,15 @@ func (g *Generator) Generate(ctx context.Context, opts Options) (*Result, error)
 		filteredRows = append(filteredRows, row)
 	}
 
+	// Build lookup: does this patient have a titration in ANY past month?
+	// (before month filtering so we can see the full appointment history)
+	hasTitrationAnyMonth := make(map[string]bool)
+	for _, row := range filteredRows {
+		if row.Type == extract.TypeTitration {
+			hasTitrationAnyMonth[row.ReferenceNumber] = true
+		}
+	}
+
 	// Filter by month/year if specified
 	if opts.Month != nil && opts.Year != nil {
 		var monthFiltered []extract.ExtractedRow
@@ -93,33 +107,57 @@ func (g *Generator) Generate(ctx context.Context, opts Options) (*Result, error)
 		return t1.Before(t2)
 	})
 
-	// Build lookup maps for invoice logic
-	initialsInPeriod := make(map[string]bool)
-	titrationsInPeriod := make(map[string]bool)
-	for _, row := range filteredRows {
-		if row.Type == extract.TypeInitial {
-			initialsInPeriod[row.ReferenceNumber] = true
-		} else if row.Type == extract.TypeTitration {
-			titrationsInPeriod[row.ReferenceNumber] = true
-		}
-	}
-
 	// Invoice rules:
-	// - If initial + titration are both in this period: two separate rows
-	// - If initial is in this period but titration is not: the titration was done
-	//   during the initial, so add £400 surcharge to the initial cost
-	// - If only titration is in this period (initial was before): exclude it,
-	//   the £400 was already charged on the initial in a previous month
+	// - Initial: include always. Add £400 surcharge only if patient has medication
+	//   AND no titration appointment exists in any month (medication done during assessment).
+	// - Titration: include in whichever month it falls in, charged at £400.
+	// - Follow-up: excluded (no charge).
 	var invoiceRows []extract.ExtractedRow
 	for _, row := range filteredRows {
 		if row.Type == extract.TypeInitial {
-			if row.Medication.HasMedication() && !titrationsInPeriod[row.ReferenceNumber] {
+			if row.Medication.HasMedication() && !hasTitrationAnyMonth[row.ReferenceNumber] {
 				row.Cost = fmt.Sprintf("£%d", extract.CalculateInitialCost(row.Mode == extract.ModeRemote)+extract.TitrationCost)
 			}
 			invoiceRows = append(invoiceRows, row)
-		} else if row.Type == extract.TypeTitration && initialsInPeriod[row.ReferenceNumber] {
+		} else if row.Type == extract.TypeTitration {
 			invoiceRows = append(invoiceRows, row)
 		}
+	}
+	if opts.Month != nil && opts.Year != nil && *opts.Month == 3 && *opts.Year == 2026 {
+		extractedInitial := 0
+		extractedTitration := 0
+		extractedFollowUp := 0
+		for _, row := range filteredRows {
+			switch row.Type {
+			case extract.TypeInitial:
+				extractedInitial++
+			case extract.TypeTitration:
+				extractedTitration++
+			case extract.TypeFollowUp:
+				extractedFollowUp++
+			}
+		}
+		invoiceInitial := 0
+		invoiceTitration := 0
+		for _, row := range invoiceRows {
+			switch row.Type {
+			case extract.TypeInitial:
+				invoiceInitial++
+			case extract.TypeTitration:
+				invoiceTitration++
+			}
+		}
+		// #region agent log
+		debuglog.Log(runID, "H2", "internal/report/generator.go:134", "march row summary before and after invoice filtering", map[string]any{
+			"filteredRows":        len(filteredRows),
+			"extractedInitial":    extractedInitial,
+			"extractedTitration":  extractedTitration,
+			"extractedFollowUp":   extractedFollowUp,
+			"invoiceRows":         len(invoiceRows),
+			"invoiceInitial":      invoiceInitial,
+			"invoiceTitration":    invoiceTitration,
+		})
+		// #endregion
 	}
 
 	invoiceCSV := g.csvWriter.WriteInvoice(invoiceRows)

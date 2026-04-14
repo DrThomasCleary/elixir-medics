@@ -50,7 +50,7 @@ func NewApp() *App {
 
 // Run starts the application.
 func (a *App) Run() {
-	a.mainWindow = a.fyneApp.NewWindow("Elixir Medics")
+	a.mainWindow = a.fyneApp.NewWindow("Elixir Medics v1.1.7")
 	a.mainWindow.Resize(fyne.NewSize(680, 440))
 
 	a.setupUI()

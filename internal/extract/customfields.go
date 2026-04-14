@@ -73,11 +73,17 @@ func ParseCustomFields(patient cliniko.Patient) ParsedCustomFields {
 					} else if strings.Contains(strings.ToLower(opt.Name), "10 week") {
 						tenWeeksWaiting = true
 					} else {
-						otherSelected = true
+						body := ""
 						if opt.Body != nil && *opt.Body != "" {
-							otherBody = *opt.Body
+							body = *opt.Body
 						} else {
-							otherBody = opt.Name
+							body = opt.Name
+						}
+						if strings.Contains(strings.ToLower(body), "not prescribed") {
+							// "Not Prescribed" variants → no charge
+						} else {
+							otherSelected = true
+							otherBody = body
 						}
 					}
 				}
