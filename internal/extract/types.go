@@ -126,6 +126,15 @@ type TenWeeksWaitingRow struct {
 	ReferringGP     string
 }
 
+// MissingInfoRow represents a patient with missing EML number or referral date.
+type MissingInfoRow struct {
+	PatientName    string
+	PatientID      int64
+	EMLNumber      string // empty if missing
+	ReferralDate   string // empty if missing
+	MissingFields  string // description of what's missing
+}
+
 // PatientContact represents a treatment note or communication for statistics.
 type PatientContact struct {
 	CreatedAt string // ISO 8601

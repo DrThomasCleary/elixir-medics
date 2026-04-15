@@ -24,4 +24,7 @@ type Writer interface {
 
 	// WriteTenWeeksWaiting generates the 10 weeks waiting list CSV.
 	WriteTenWeeksWaiting(rows []extract.TenWeeksWaitingRow) string
+
+	// WriteMissingInfo generates the missing patient info CSV.
+	WriteMissingInfo(rows []extract.MissingInfoRow) string
 }

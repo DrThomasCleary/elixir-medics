@@ -105,6 +105,7 @@ func runCLI(month, year int, outputDir string) {
 		"patients.csv":          result.PatientsCSV,
 		"yearly_follow_up.csv":  result.YearlyFollowUpCSV,
 		"10_weeks_waiting.csv":  result.TenWeeksWaitingCSV,
+		"missing_info.csv":      result.MissingInfoCSV,
 	}
 
 	if result.SubmissionsCSV != nil {

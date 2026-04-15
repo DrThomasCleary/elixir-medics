@@ -38,5 +38,6 @@ type Result struct {
 	SubmissionsCSV          *string
 	YearlyFollowUpCSV       string
 	TenWeeksWaitingCSV      string
+	MissingInfoCSV          string  // Patients missing EML number or referral date
 	RawPatients             []cliniko.Patient
 }

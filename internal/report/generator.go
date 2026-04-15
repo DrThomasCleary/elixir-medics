@@ -269,6 +269,46 @@ func (g *Generator) Generate(ctx context.Context, opts Options) (*Result, error)
 	}
 	tenWeeksWaitingCSV := g.csvWriter.WriteTenWeeksWaiting(tenWeeksWaitingRows)
 
+	// Build missing info list from ALL patients (not just those with EML numbers)
+	var missingInfoRows []extract.MissingInfoRow
+	for _, p := range patients {
+		name := fmt.Sprintf("%s %s", p.FirstName, p.LastName)
+		emlNumber := ""
+		if p.OldReferenceID != nil {
+			emlNumber = *p.OldReferenceID
+		}
+		cf := extract.ParseCustomFields(p)
+		referralDate := ""
+		if cf.ReferralDate != nil {
+			referralDate = *cf.ReferralDate
+		}
+
+		missingEML := emlNumber == ""
+		missingReferral := referralDate == ""
+
+		if missingEML || missingReferral {
+			missing := ""
+			if missingEML && missingReferral {
+				missing = "EML Number, Referral Date"
+			} else if missingEML {
+				missing = "EML Number"
+			} else {
+				missing = "Referral Date"
+			}
+			missingInfoRows = append(missingInfoRows, extract.MissingInfoRow{
+				PatientName:   name,
+				PatientID:     p.ID,
+				EMLNumber:     emlNumber,
+				ReferralDate:  referralDate,
+				MissingFields: missing,
+			})
+		}
+	}
+	sort.Slice(missingInfoRows, func(i, j int) bool {
+		return missingInfoRows[i].PatientName < missingInfoRows[j].PatientName
+	})
+	missingInfoCSV := g.csvWriter.WriteMissingInfo(missingInfoRows)
+
 	log.Println("[DEBUG] Generate: all done, returning result")
 
 	return &Result{
@@ -279,6 +319,7 @@ func (g *Generator) Generate(ctx context.Context, opts Options) (*Result, error)
 		SubmissionsCSV:         submissionsCSV,
 		YearlyFollowUpCSV:      yearlyFollowUpCSV,
 		TenWeeksWaitingCSV:     tenWeeksWaitingCSV,
+		MissingInfoCSV:         missingInfoCSV,
 		RawPatients:            patients,
 	}, nil
 }

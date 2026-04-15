@@ -209,6 +209,34 @@ func (w *CSVWriter) WriteTenWeeksWaiting(rows []extract.TenWeeksWaitingRow) stri
 	return buf.String()
 }
 
+// WriteMissingInfo generates the missing patient info CSV.
+func (w *CSVWriter) WriteMissingInfo(rows []extract.MissingInfoRow) string {
+	headers := []string{
+		"Patient Name",
+		"EML Number",
+		"Referral Date",
+		"Missing",
+	}
+
+	var buf bytes.Buffer
+	buf.WriteString(utf8BOM)
+	writer := csv.NewWriter(&buf)
+
+	_ = writer.Write(headers)
+
+	for _, row := range rows {
+		_ = writer.Write([]string{
+			row.PatientName,
+			row.EMLNumber,
+			formatDateUK(row.ReferralDate),
+			row.MissingFields,
+		})
+	}
+
+	writer.Flush()
+	return buf.String()
+}
+
 // WriteYearlyFollowUp generates the yearly follow-up list CSV.
 func (w *CSVWriter) WriteYearlyFollowUp(rows []extract.YearlyFollowUpRow) string {
 	headers := []string{

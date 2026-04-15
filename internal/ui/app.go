@@ -267,6 +267,7 @@ func (a *App) showSaveDialog(result *report.Result) {
 		"patients.csv":          result.PatientsCSV,
 		"yearly_follow_up.csv":  result.YearlyFollowUpCSV,
 		"10_weeks_waiting.csv":  result.TenWeeksWaitingCSV,
+		"missing_info.csv":      result.MissingInfoCSV,
 	}
 	if result.SubmissionsCSV != nil {
 		files["submissions.csv"] = *result.SubmissionsCSV
