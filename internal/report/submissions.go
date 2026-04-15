@@ -231,6 +231,14 @@ func GenerateSubmissionsReport(
 		}
 	}
 
+	// Build lookup: does this patient have a titration row in any month?
+	hasTitrationAnywhere := make(map[string]bool)
+	for _, row := range rows {
+		if row.Type == extract.TypeTitration {
+			hasTitrationAnywhere[row.ReferenceNumber] = true
+		}
+	}
+
 	// Count initial assessments by mode and titration appointments in the reporting month
 	var initialF2FCount, initialRemoteCount, titrationCount int
 	for _, row := range rows {
@@ -250,6 +258,11 @@ func GenerateSubmissionsReport(
 				initialRemoteCount++
 			} else {
 				initialF2FCount++
+			}
+			// If initial has medication but no separate titration appointment,
+			// the titration was done during the initial — count it
+			if row.Medication.HasMedication() && !hasTitrationAnywhere[row.ReferenceNumber] {
+				titrationCount++
 			}
 		case extract.TypeTitration:
 			titrationCount++
