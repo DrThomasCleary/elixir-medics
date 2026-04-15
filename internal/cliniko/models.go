@@ -27,6 +27,13 @@ type CustomFieldOption struct {
 	Body     *string `json:"body,omitempty"`
 }
 
+// CustomFieldOther represents the "Other" free-text option on a checkbox field.
+type CustomFieldOther struct {
+	Enabled  bool   `json:"enabled,omitempty"`
+	Selected bool   `json:"selected,omitempty"`
+	Value    string `json:"value,omitempty"`
+}
+
 // CustomField represents a custom field in a patient record.
 type CustomField struct {
 	Name    string              `json:"name"`
@@ -34,6 +41,7 @@ type CustomField struct {
 	Token   string              `json:"token"`
 	Value   *string             `json:"value,omitempty"`
 	Options []CustomFieldOption `json:"options,omitempty"`
+	Other   *CustomFieldOther   `json:"other,omitempty"`
 }
 
 // CustomFieldSection represents a section of custom fields.

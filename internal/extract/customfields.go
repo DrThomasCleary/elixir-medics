@@ -88,6 +88,15 @@ func ParseCustomFields(patient cliniko.Patient) ParsedCustomFields {
 					}
 				}
 			}
+			// Also check the "Other" free-text field (separate from options)
+			if field.Other != nil && field.Other.Selected {
+				otherSelected = true
+				if field.Other.Value != "" {
+					otherBody = field.Other.Value
+				} else {
+					otherBody = "Other"
+				}
+			}
 			if prescribed {
 				result.Medication = MedStatusYes
 			} else if tenWeeksWaiting {
